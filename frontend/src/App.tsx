@@ -23,6 +23,7 @@ import { audioPlayer } from "./infra/audio/AudioPlayer";
 import { startLiveStatePush, startLiveStatePoll, type LiveStateSnapshot } from "./stores/liveState";
 import { initGlobalShortcut } from "./infra/globalShortcut";
 import { ENV } from "./config/env";
+import { APP_VERSION } from "@/version";
 import { pushToast } from "./utils/toast";
 import styles from "./App.module.css";
 
@@ -257,7 +258,7 @@ export function App() {
                 <div class={styles.brand}>
                     <img class={styles.logo} src={`${import.meta.env.BASE_URL}logo.png`} alt="" />
                     <span class={styles.brandName}>鱼小曼点歌助手</span>
-                    <small>v0.1.0-beta.2</small>
+                    <small>v{APP_VERSION}</small>
                 </div>
                 <DanmuBadge />
                 <Show when={needConfig()}>

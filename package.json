@@ -10,9 +10,10 @@
   ],
   "scripts": {
     "prepare": "git config core.hooksPath .githooks || exit 0",
+    "version:sync": "node desktop-tauri/scripts/sync-version.mjs",
     "dev:frontend": "pnpm --filter ordersong-frontend dev",
-    "dev:desktop": "pnpm --filter ordersong-desktop dev",
-    "build:frontend": "pnpm --filter ordersong-frontend build",
+    "dev:desktop": "pnpm version:sync && pnpm --filter ordersong-desktop dev",
+    "build:frontend": "pnpm version:sync && pnpm --filter ordersong-frontend build",
     "build:rust": "cargo build --release --manifest-path desktop-tauri/src-tauri/Cargo.toml",
     "bundle": "pnpm --filter ordersong-desktop bundle:res",
     "installer": "pnpm --filter ordersong-desktop installer",

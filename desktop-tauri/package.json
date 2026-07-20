@@ -6,7 +6,7 @@
         "bundle:res": "node scripts/bundle-backend.mjs",
         "gen-icon": "node scripts/gen-icon.mjs",
         "clean:acl": "node scripts/clean-acl-cache.mjs",
-        "installer": "node scripts/clean-acl-cache.mjs && node scripts/bundle-backend.mjs && pnpm tauri build"
+        "installer": "node scripts/sync-version.mjs && node scripts/clean-acl-cache.mjs && node scripts/bundle-backend.mjs && pnpm tauri build"
     },
     "devDependencies": {
         "@tauri-apps/cli": "^2",

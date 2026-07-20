@@ -4,6 +4,7 @@ import { qqService } from "@/services/MusicService";
 import { pushToast } from "@/utils/toast";
 import { invoke, isTauri } from "@/infra/tauri/invoke";
 import { backupConfig, parseConfig, applyImportedConfig, pickConfigFileTauri } from "@/utils/configBackup";
+import { APP_VERSION } from "@/version";
 import styles from "./SettingsPanel.module.css";
 
 /**
@@ -129,7 +130,7 @@ export function AboutSection() {
                     "font-weight": 600
                 }}>BETA</span>
             </p>
-            <p>版本：<code>v0.1.0-beta.2</code>（测试版，欢迎反馈问题）</p>
+            <p>版本：<code>v{APP_VERSION}</code>（测试版，欢迎反馈问题）</p>
             <p>支持平台：网易云音乐 / QQ 音乐</p>
             <p>联系方式：<a href="mailto:dm075@qq.com">dm075@qq.com</a></p>
 
