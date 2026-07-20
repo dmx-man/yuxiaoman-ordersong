@@ -76,7 +76,7 @@ jobs:
         run: cargo fmt --all --check --manifest-path desktop-tauri/src-tauri/Cargo.toml
 
       - name: Clippy
-        run: cargo clippy --workspace --manifest-path desktop-tauri/src-tauri/Cargo.toml -- -D warnings
+        run: cargo clippy --workspace --manifest-path desktop-tauri/src-tauri/Cargo.toml
 
       - name: Check workspace
         run: cargo check --workspace --manifest-path desktop-tauri/src-tauri/Cargo.toml

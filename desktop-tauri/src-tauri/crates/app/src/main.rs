@@ -12,15 +12,12 @@ use ordersong_core::config;
 use std::fs;
 
 use tauri::{Manager, WindowEvent};
-use tauri_plugin_dialog;
-use tauri_plugin_global_shortcut;
 
 use crate::logger::write_log;
 
 const WAIT_BACKEND_TIMEOUT: Duration = Duration::from_secs(15);
 
 /// dev 模式下 Vite dev server 监听端口
-
 #[cfg(debug_assertions)]
 const VITE_DEV_PORT: u16 = 5173;
 
