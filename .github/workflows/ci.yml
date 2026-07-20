@@ -64,6 +64,10 @@ jobs:
       - name: Install JS deps
         run: pnpm install --no-frozen-lockfile
 
+      # tauri-build 需要 icons/icon.ico (被 .gitignore 忽略, 这里从 logo.png 重新生成)
+      - name: Generate icon
+        run: node desktop-tauri/scripts/gen-icon.mjs
+
       # tauri build.rs 需要 resources/**/* 存在, 由 bundle-backend 生成
       - name: Prepare resources
         run: pnpm --filter ordersong-desktop bundle:res
@@ -142,6 +146,11 @@ jobs:
       - name: Install JS deps
         if: steps.check.outputs.exists != 'true'
         run: pnpm install --no-frozen-lockfile
+
+      # tauri-build 需要 icons/icon.ico (被 .gitignore 忽略, 这里从 logo.png 重新生成)
+      - name: Generate icon
+        if: steps.check.outputs.exists != 'true'
+        run: node desktop-tauri/scripts/gen-icon.mjs
 
       - name: Build x64 installer
         if: steps.check.outputs.exists != 'true'
