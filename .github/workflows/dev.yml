@@ -22,6 +22,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          ref: dev # dev-only workflow：固定拉取 dev 分支，手动触发(workflow_dispatch)也不会误用默认分支(master)
           fetch-depth: 0 # 需要完整历史以生成提交对比
 
       - name: Setup pnpm
