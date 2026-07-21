@@ -114,5 +114,5 @@ jobs:
           gh release create "$TAG" "$EXE" \
             --title "Dev Prerelease ($SHORT)" \
             --notes-file dev-notes.md \
-            --target HEAD \
+            --target "${{ github.sha }}" \
             --prerelease
