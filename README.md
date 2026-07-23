@@ -1,3 +1,16 @@
+本项目相较原项目，新增了如下内容：
+
+* 个性化：音频淡入淡出、直播叠加层个性化显示、快捷键暂停/播放
+* 系统：主题设置、关闭方式设置
+
+本项目自动构建exe，可前往[Release](https://github.com/leopold7/yuxiaoman-ordersong/releases)页面中下载即可。
+
+开发分支的exe可前往[Actions](https://github.com/leopold7/yuxiaoman-ordersong/actions)中自行下载，也可前往[Release](https://github.com/leopold7/yuxiaoman-ordersong/releases)页面中下载最新的开发分支exe
+
+*本项目已支持通过[Now Playing Service](https://github.com/leopold7/now-playing-service)适配，可使用[Now Playing Service](https://github.com/leopold7/now-playing-service)的播放器样式等等*
+
+---
+
 # 鱼小曼点歌助手
 
 > B 站直播弹幕点歌工具 · 桌面端（Tauri 2 + Rust + SolidJS） · （Beta）
