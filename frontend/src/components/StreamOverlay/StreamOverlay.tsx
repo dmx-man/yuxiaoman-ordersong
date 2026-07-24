@@ -3,6 +3,8 @@ import { liveState, smoothCurrentTime } from "@/stores/liveState";
 import { ENV } from "@/config/env";
 import styles from "./StreamOverlay.module.css";
 
+const platformBadge = (p?: string) => (p === "qq" ? "QQ" : p === "wy" ? "网易云" : "");
+
 function fmt(sec: number): string {
     if (!isFinite(sec) || sec <= 0) return "00:00";
     const m = Math.floor(sec / 60);
@@ -79,7 +81,14 @@ export function StreamOverlay() {
                     <Show when={now()} fallback={<div class={styles.title}>暂无播放</div>}>
                         {(it) => (
                             <>
-                                <div class={styles.title}>{it().sname} - {it().sartist}</div>
+                                <div class={styles.titleRow}>
+                                    <span class={styles.titleText}>{it().sname} - {it().sartist}</span>
+                                    <Show when={platformBadge(it().platform)}>
+                                        <span class={`${styles.badge} ${it().platform === "qq" ? styles.qq : styles.wy}`}>
+                                            {platformBadge(it().platform)}
+                                        </span>
+                                    </Show>
+                                </div>
                                 <div class={styles.meta}>
                                     <span>{it().uname}</span>
                                     <span>{fmt(cur())} / {fmt(dur())}</span>
@@ -109,17 +118,26 @@ export function StreamOverlay() {
             </Show>
 
             {/* 下一首预告 */}
-            <Show when={ENV.SHOW_NEXT && upcoming().length > 0}>
+            <Show when={ENV.SHOW_NEXT}>
                 <div class={styles.queue}>
                     <div class={styles.queueTitle}>接下来 ({liveState().queue.length} 首在排)</div>
-                    <For each={upcoming()}>
-                        {(it) => (
-                            <div class={styles.queueRow}>
-                                <span><b>{it.sname}</b> - {it.sartist}</span>
-                                <span class={styles.user}>{it.uname}</span>
-                            </div>
-                        )}
-                    </For>
+                    <Show when={upcoming().length > 0} fallback={<div class={styles.queueEmpty}>队列空空，发弹幕点歌吧～</div>}>
+                        <For each={upcoming()}>
+                            {(it) => (
+                                <div class={styles.queueRow}>
+                                    <span class={styles.queueSong}>
+                                        <span class={styles.queueSongText}><b>{it.sname}</b> - {it.sartist}</span>
+                                        <Show when={platformBadge(it.platform)}>
+                                            <span class={`${styles.badge} ${it.platform === "qq" ? styles.qq : styles.wy}`}>
+                                                {platformBadge(it.platform)}
+                                            </span>
+                                        </Show>
+                                    </span>
+                                    <span class={styles.user}>{it.uname}</span>
+                                </div>
+                            )}
+                        </For>
+                    </Show>
                 </div>
             </Show>
         </div>
