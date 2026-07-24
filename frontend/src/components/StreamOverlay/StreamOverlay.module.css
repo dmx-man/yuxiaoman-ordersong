@@ -64,12 +64,19 @@
 }
 .coverImg { width: 100%; height: 100%; object-fit: cover; display: block; }
 .info { flex: 1; min-width: 0; }
-.title {
+.titleRow {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+.titleText {
     font-size: 18px;
     font-weight: 700;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    min-width: 0;
 }
 .meta {
     font-size: 13px;
@@ -88,7 +95,7 @@
 }
 .progressFill {
     height: 100%;
-    background: #ff6dab;
+    background: var(--accent);
     transition: width 0.25s linear;
 }
 
@@ -128,8 +135,45 @@
 .queueRow {
     display: flex;
     justify-content: space-between;
+    align-items: center;
+    gap: 8px;
     font-size: 14px;
     padding: 3px 0;
 }
-.queueRow b { color: #ffc4dc; font-weight: 600; }
-.queueRow .user { opacity: 0.75; font-size: 12px; margin-left: 8px; }
+.queueSong {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+.queueSongText {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+}
+.queueRow b { color: var(--accent); font-weight: 600; }
+.queueRow .user { opacity: 0.75; font-size: 12px; flex-shrink: 0; }
+
+/* 来源标签：网易云 / QQ，显示在歌手后面 */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    padding: 1px 7px;
+    border-radius: 6px;
+    line-height: 1.4;
+}
+.badge.wy { background: #ff2d55; }
+.badge.qq { background: #14a44d; }
+.badge.bili { background: var(--platform-bili, #fb7299); }
+
+/* 队列为空时的提示 */
+.queueEmpty {
+    font-size: 13px;
+    opacity: 0.75;
+    padding: 4px 0;
+}

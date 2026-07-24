@@ -4,10 +4,12 @@ import { NowPlayingBar } from "./components/NowPlayingBar/NowPlayingBar";
 import { OrderTable } from "./components/OrderTable/OrderTable";
 import { LyricView } from "./components/LyricView/LyricView";
 import { SettingsPanel, goToSettingsTab } from "./components/SettingsPanel/SettingsPanel";
+import { ThemeColorPicker } from "./components/ThemeColorPicker/ThemeColorPicker";
 import { StreamOverlay } from "./components/StreamOverlay/StreamOverlay";
 import { ListOverlay } from "./components/ListOverlay/ListOverlay";
 import { AudioBridge } from "./components/AudioBridge/AudioBridge";
 import { OnboardingModal } from "./components/OnboardingModal/OnboardingModal";
+import { ExitChoiceModal } from "./components/ExitChoiceModal/ExitChoiceModal";
 import { BiliQrLogin } from "./components/BiliQrLogin/BiliQrLogin";
 import { startDanmu } from "./services/DanmuService";
 import { loadIdleByCurrentSource, lyrics, activeLyricIdx, lyricLoading } from "./services/PlayerService";
@@ -21,8 +23,12 @@ import { queue } from "./stores/queue";
 import { liveNotice } from "./stores/notice";
 import { audioPlayer } from "./infra/audio/AudioPlayer";
 import { startLiveStatePush, startLiveStatePoll, type LiveStateSnapshot } from "./stores/liveState";
+import { initGlobalShortcut } from "./infra/globalShortcut";
 import { ENV } from "./config/env";
+import { APP_VERSION } from "@/version";
 import { pushToast } from "./utils/toast";
+import { applyAccentColor } from "./utils/accent";
+import { isTauri } from "@/infra/tauri/invoke";
 import styles from "./App.module.css";
 
 /** 主程序: 把当前播放快照拼装出来推给后端, 供 OBS 浏览器源同步 */
@@ -52,10 +58,15 @@ function buildLiveSnapshot(): LiveStateSnapshot {
             sname: it.song.sname,
             sartist: it.song.sartist,
             uname: it.uname,
-            platform: it.song.platform
+            platform: it.song.platform,
+            quality: it.song.quality
         })),
         notice: n ? { text: n.text, level: n.level } : null,
         nowUrl,
+        fadeEnabled: settings.fadeEnabled(),
+        fadeDuration: settings.fadeDuration(),
+        accentColor: settings.accentColor(),
+        theme: settings.theme(),
         t: Date.now()
     };
 }
@@ -128,19 +139,39 @@ export function App() {
     const [showSettings, setShowSettings] = createSignal(true);
     const [onboardingDismissed, setOnboardingDismissed] = createSignal(false);
     const [booted, setBooted] = createSignal(false);
+    const [showExitChoice, setShowExitChoice] = createSignal(false);
 
     createEffect(() => {
         document.body.classList.toggle("theme-light", settings.theme() === "light");
+    });
+
+    // 自定义主题强调色: 变化时实时写入根节点 CSS 变量
+    createEffect(() => {
+        applyAccentColor(settings.accentColor());
     });
 
     createEffect(() => {
         if (danmuNeedCode()) setOnboardingDismissed(false);
     });
 
+    // 叠加层 (OBS 浏览器源等独立 web 视图): 不依赖主程序 live-state 实时推送,
+    // 启动时直接从共享配置拉取主题色/主题, 保证即使主程序尚未推送也能显示客户端设置的主题色
+    createEffect(() => {
+        const v = ENV.VIEW;
+        if (v === "lyrics" || v === "stream" || v === "list" || v === "audio") {
+            void hydrateFromSharedConfig().then(() => reloadSettingsFromStorage());
+        }
+    });
+
     onMount(async () => {
+        // 系统级全局快捷键（窗口失焦 / 最小化也能触发）：注册并随设置变化自动同步
+        initGlobalShortcut();
+
         if (ENV.VIEW === "lyrics" || ENV.VIEW === "stream" || ENV.VIEW === "list" || ENV.VIEW === "audio") return;
         await hydrateFromSharedConfig();
         reloadSettingsFromStorage();
+        // 恢复上次保存的音量 (否则每次打开都回到最大)
+        audioPlayer.setVolume(settings.volume());
         reloadSessionFromStorage();
         setBooted(true);
 
@@ -163,6 +194,24 @@ export function App() {
         }
 
         startLiveStatePush(buildLiveSnapshot);
+
+        // 监听 Rust 发出的"请求选择退出方式"事件（点关闭按钮时触发）
+        if (isTauri()) {
+            import("@tauri-apps/api/event").then(({ listen, emit }) => {
+                listen<unknown>("request-exit-choice", () => {
+                    const m = settings.closeMethod();
+                    // 已记住选择: 直接执行对应退出方式, 不再弹窗
+                    if (m === "minimize") {
+                        void emit("exit-choice-minimize");
+                    } else if (m === "quit") {
+                        void emit("exit-choice-quit");
+                    } else {
+                        // 询问(默认): 弹出选择框
+                        setShowExitChoice(true);
+                    }
+                }).catch(() => {});
+            });
+        }
     });
 
     if (ENV.VIEW === "lyrics") {
@@ -239,6 +288,9 @@ export function App() {
             <Show when={showOnboarding()}>
                 <OnboardingModal onClose={() => setOnboardingDismissed(true)} />
             </Show>
+            <Show when={showExitChoice()}>
+                <ExitChoiceModal onClose={() => setShowExitChoice(false)} />
+            </Show>
             <Show when={showRoomLogin()}>
                 <BiliQrLogin
                     onClose={() => setOnboardingDismissed(true)}
@@ -249,7 +301,7 @@ export function App() {
                 <div class={styles.brand}>
                     <img class={styles.logo} src={`${import.meta.env.BASE_URL}logo.png`} alt="" />
                     <span class={styles.brandName}>鱼小曼点歌助手</span>
-                    <small>v0.1.0-beta.2</small>
+                    <small>v{APP_VERSION}</small>
                 </div>
                 <DanmuBadge />
                 <Show when={needConfig()}>
@@ -260,6 +312,7 @@ export function App() {
                     </button>
                 </Show>
                 <div class={styles.spacer} />
+                <ThemeColorPicker />
                 <button
                     class={styles.headerBtn}
                     onClick={() => settings.setTheme(settings.theme() === "dark" ? "light" : "dark")}

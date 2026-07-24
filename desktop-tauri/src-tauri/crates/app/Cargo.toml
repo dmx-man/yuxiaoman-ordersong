@@ -18,5 +18,7 @@ ordersong-core = { path = "../core" }
 ordersong-server = { path = "../server" }
 
 tauri = { workspace = true }
+tauri-plugin-global-shortcut = { workspace = true }
+tauri-plugin-dialog = { workspace = true }
 tokio = { workspace = true }
 ureq = { workspace = true }

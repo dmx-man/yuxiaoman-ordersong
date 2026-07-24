@@ -1,0 +1,7 @@
+[[permission]]
+identifier = "allow-config-file"
+description = "允许备份/导入配置时读写用户选定路径的文件"
+commands.allow = [
+    "write_text_file",
+    "read_text_file",
+]

@@ -17,6 +17,13 @@ function buildUrl(view: "stream" | "lyrics" | "list" | "audio" | "full"): string
     const params: string[] = [];
     if (ENV.ANCHOR_CODE) params.push(`code=${encodeURIComponent(ENV.ANCHOR_CODE)}`);
     if (view !== "full") params.push(`view=${view}`);
+    // 直播叠加层: URL 参数跟随"直播叠加层"开关, 让复制出的地址与配置一致
+    if (view === "stream") {
+        params.push(`showCard=${settings.obsShowSongCard() ? 1 : 0}`);
+        params.push(`showLyrics=${settings.obsShowScrollLyrics() ? 1 : 0}`);
+        params.push(`showNext=${settings.obsShowNextPreview() ? 1 : 0}`);
+        params.push(`showNotice=${settings.obsShowNotice() ? 1 : 0}`);
+    }
     const q = params.length ? `?${params.join("&")}` : "";
     return `${OBS_BASE}/order/${q}`;
 }

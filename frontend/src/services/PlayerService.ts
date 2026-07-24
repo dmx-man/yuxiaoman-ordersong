@@ -247,6 +247,15 @@ export function playFirstIfNeeded(): void {
     }
 }
 
+/**
+ * 暂停 / 播放切换的统一入口（底部按钮与全局快捷键共用）。
+ * 根据设置中的「淡入淡出」开关决定是否走淡入淡出过渡。
+ */
+export function togglePlayback(): void {
+    const fadeMs = settings.fadeEnabled() ? Math.max(0, settings.fadeDuration()) : 0;
+    audioPlayer.toggle(fadeMs);
+}
+
 function applyIdleList(songs: SongInfo[]): void {
     const list: OrderItem[] = shuffle(
         songs.map((song) => ({
@@ -385,8 +394,15 @@ async function qqGetFavorite(): Promise<SongInfo[]> {
 
 /** 手动加歌 */
 export async function adminAddSong(keyword: string): Promise<void> {
-    const platform = settings.musicPlatform();
-    const song = await getMusic(platform).search(keyword);
+    const kw = keyword.trim();
+    let platform = settings.musicPlatform();
+    let query = kw;
+    // BV 号 (忽略大小写, 形如 BV1CfTQ6uEqk) 直接走 B 站
+    if (/^bv[0-9a-z]{10}$/i.test(kw)) {
+        platform = "bili";
+        query = "BV" + kw.slice(2);
+    }
+    const song = await getMusic(platform).search(query);
     if (!song) {
         pushToast(`没找到 [${keyword}]`, "warn");
         return;

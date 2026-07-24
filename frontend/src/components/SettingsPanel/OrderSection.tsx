@@ -27,6 +27,7 @@ export function OrderSection() {
                     >
                         <option value="wy">网易云音乐</option>
                         <option value="qq">QQ 音乐</option>
+                        <option value="bili">B站 (BV 号)</option>
                     </select>
                     <span />
                 </div>

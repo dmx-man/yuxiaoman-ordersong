@@ -8,6 +8,7 @@ description = "网易云 weapi + QQ 音乐客户端"
 
 [dependencies]
 ordersong-core = { path = "../core" }
+ordersong-bili-web = { path = "../bili-web" }
 reqwest = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

@@ -36,10 +36,32 @@ const K = {
     enableSCBoost: "v3.enableSCBoost",
     showLyrics: "v3.showLyrics",
     theme: "v3.theme",
+    /** 自定义主题强调色 (hex, 如 "#ff5fa2") */
+    accentColor: "v3.accentColor",
+    /** 暂停/播放 快捷键组合 (如 "Ctrl+Space"), 空串表示未设置 */
+    shortcutPausePlay: "v3.shortcutPausePlay",
+    /** 淡入淡出: 暂停/播放音频时是否走淡入淡出过渡, 默认关 */
+    fadeEnabled: "v3.fadeEnabled",
+    /** 淡入淡出时长(ms), 默认 1000 */
+    fadeDuration: "v3.fadeDuration",
+    /** 主程序音量 (0~1), 默认 1, 重新打开时恢复 */
+    volume: "v3.volume",
+    // OBS 浏览器源 - 直播叠加层显示开关 (默认全部开启)
+    obsShowSongCard: "v3.obs.showSongCard",
+    obsShowScrollLyrics: "v3.obs.showScrollLyrics",
+    obsShowNextPreview: "v3.obs.showNextPreview",
+    obsShowNotice: "v3.obs.showNotice",
+    /** 关闭方式: ask / minimize / quit */
+    closeMethod: "v3.closeMethod",
 };
 
 export type IdleSource = "playlist" | "favorite" | "popular";
 export type DanmuMode = "open" | "room";
+/** 关闭方式: ask=每次询问 / minimize=最小化到托盘 / quit=直接退出 */
+export type CloseMethod = "ask" | "minimize" | "quit";
+
+/** 默认主题强调色 (与 global.css 中 --accent 初始值保持一致) */
+export const DEFAULT_ACCENT_COLOR = "#ff5fa2";
 
 export interface SongListHistoryItem {
     platform: Platform;
@@ -71,6 +93,21 @@ const [fansMedalThreshold, setFansMedalThreshold] = createSignal<number>(loadJSO
 const [enableSCBoost, setEnableSCBoost] = createSignal<boolean>(loadJSON(K.enableSCBoost, true));
 const [showLyrics, setShowLyrics] = createSignal<boolean>(loadJSON(K.showLyrics, true));
 const [theme, setTheme] = createSignal<"dark" | "light">(loadJSON(K.theme, "light"));
+const [accentColor, setAccentColor] = createSignal<string>(loadJSON(K.accentColor, DEFAULT_ACCENT_COLOR));
+const [shortcutPausePlay, setShortcutPausePlay] = createSignal<string>(loadJSON(K.shortcutPausePlay, ""));
+const [fadeEnabled, setFadeEnabled] = createSignal<boolean>(loadJSON(K.fadeEnabled, false));
+const [fadeDuration, setFadeDuration] = createSignal<number>(loadJSON(K.fadeDuration, 1000));
+const [volume, setVolume] = createSignal<number>(Math.max(0, Math.min(1, loadJSON(K.volume, 1))));
+// OBS 浏览器源 - 直播叠加层显示开关, 默认全部开启
+const [obsShowSongCard, setObsShowSongCard] = createSignal<boolean>(loadJSON(K.obsShowSongCard, true));
+const [obsShowScrollLyrics, setObsShowScrollLyrics] = createSignal<boolean>(loadJSON(K.obsShowScrollLyrics, true));
+const [obsShowNextPreview, setObsShowNextPreview] = createSignal<boolean>(loadJSON(K.obsShowNextPreview, true));
+const [obsShowNotice, setObsShowNotice] = createSignal<boolean>(loadJSON(K.obsShowNotice, true));
+// 关闭方式 (默认询问)
+const [closeMethod, setCloseMethod] = createSignal<CloseMethod>(loadJSON(K.closeMethod, "ask") as CloseMethod);
+
+/** 非持久化: 是否正在捕获快捷键, 用于全局监听跳过识别, 避免自触发 */
+const [capturingShortcut, setCapturingShortcut] = createSignal<boolean>(false);
 
 createEffect(() => saveJSON(K.musicPlatform, musicPlatform()));
 createEffect(() => saveJSON(K.danmuPlatform, danmuPlatform()));
@@ -93,6 +130,16 @@ createEffect(() => saveJSON(K.fansMedalThreshold, fansMedalThreshold()));
 createEffect(() => saveJSON(K.enableSCBoost, enableSCBoost()));
 createEffect(() => saveJSON(K.showLyrics, showLyrics()));
 createEffect(() => saveJSON(K.theme, theme()));
+createEffect(() => saveJSON(K.accentColor, accentColor()));
+createEffect(() => saveJSON(K.shortcutPausePlay, shortcutPausePlay()));
+createEffect(() => saveJSON(K.fadeEnabled, fadeEnabled()));
+createEffect(() => saveJSON(K.fadeDuration, fadeDuration()));
+createEffect(() => saveJSON(K.volume, volume()));
+createEffect(() => saveJSON(K.obsShowSongCard, obsShowSongCard()));
+createEffect(() => saveJSON(K.obsShowScrollLyrics, obsShowScrollLyrics()));
+createEffect(() => saveJSON(K.obsShowNextPreview, obsShowNextPreview()));
+createEffect(() => saveJSON(K.obsShowNotice, obsShowNotice()));
+createEffect(() => saveJSON(K.closeMethod, closeMethod()));
 
 export const settings = {
     musicPlatform, setMusicPlatform,
@@ -116,6 +163,17 @@ export const settings = {
     enableSCBoost, setEnableSCBoost,
     showLyrics, setShowLyrics,
     theme, setTheme,
+    accentColor, setAccentColor,
+    shortcutPausePlay, setShortcutPausePlay,
+    fadeEnabled, setFadeEnabled,
+    fadeDuration, setFadeDuration,
+    volume, setVolume,
+    obsShowSongCard, setObsShowSongCard,
+    obsShowScrollLyrics, setObsShowScrollLyrics,
+    obsShowNextPreview, setObsShowNextPreview,
+    obsShowNotice, setObsShowNotice,
+    closeMethod, setCloseMethod,
+    capturingShortcut, setCapturingShortcut,
 };
 
 /**
@@ -143,6 +201,15 @@ export function reloadSettingsFromStorage(): void {
     setEnableSCBoost(loadJSON(K.enableSCBoost, true));
     setShowLyrics(loadJSON(K.showLyrics, true));
     setTheme(loadJSON(K.theme, "light"));
+    setAccentColor(loadJSON(K.accentColor, DEFAULT_ACCENT_COLOR));
+    setShortcutPausePlay(loadJSON(K.shortcutPausePlay, ""));
+    setFadeEnabled(loadJSON(K.fadeEnabled, false));
+    setFadeDuration(loadJSON(K.fadeDuration, 1000));
+    setObsShowSongCard(loadJSON(K.obsShowSongCard, true));
+    setObsShowScrollLyrics(loadJSON(K.obsShowScrollLyrics, true));
+    setObsShowNextPreview(loadJSON(K.obsShowNextPreview, true));
+    setObsShowNotice(loadJSON(K.obsShowNotice, true));
+    setCloseMethod(loadJSON(K.closeMethod, "ask") as CloseMethod);
 }
 
 /** 追加一条空闲歌单历史 (按 platform+listId 去重, 上限 50 条) */

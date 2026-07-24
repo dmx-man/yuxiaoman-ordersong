@@ -9,13 +9,15 @@ mod webview_login;
 use std::time::{Duration, Instant};
 
 use ordersong_core::config;
-use tauri::{Manager, WindowEvent};
+use std::fs;
+
+use tauri::{Emitter, Listener, Manager, WindowEvent};
 
 use crate::logger::write_log;
 
 const WAIT_BACKEND_TIMEOUT: Duration = Duration::from_secs(15);
 
-/// dev 模式下 Vite dev server 监听端口 
+/// dev 模式下 Vite dev server 监听端口
 #[cfg(debug_assertions)]
 const VITE_DEV_PORT: u16 = 5173;
 
@@ -33,6 +35,18 @@ fn main() {
         write_log(&format!("FATAL caught: {:?}", err));
         std::process::exit(2);
     }
+}
+
+/// 将配置备份写入用户通过对话框选择的任意路径 (供前端“备份配置”使用).
+#[tauri::command]
+fn write_text_file(path: String, contents: String) -> Result<(), String> {
+    fs::write(&path, contents).map_err(|e| format!("写入文件失败：{e}"))
+}
+
+/// 读取用户通过对话框选择的备份文件内容 (供前端“导入配置”使用).
+#[tauri::command]
+fn read_text_file(path: String) -> Result<String, String> {
+    fs::read_to_string(&path).map_err(|e| format!("读取文件失败：{e}"))
 }
 
 fn check_health(url: &str) -> bool {
@@ -69,6 +83,8 @@ fn run_app() {
     let state = ordersong_server::new_state(cfg);
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
+        .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
             webview_login::open_netease_login,
             webview_login::read_netease_cookies,
@@ -79,10 +95,25 @@ fn run_app() {
             browser::open_bili_live_settings,
             browser::open_bili_qr_login,
             browser::close_bili_live_settings,
+            write_text_file,
+            read_text_file,
         ])
         .setup(move |app| {
             write_log("setup() start");
             tray::build(app)?;
+
+            // 监听前端在"退出方式选择"弹窗中的选择
+            let handle_min = app.handle().clone();
+            app.listen("exit-choice-minimize", move |_| {
+                if let Some(win) = handle_min.get_webview_window("main") {
+                    let _ = win.hide();
+                    write_log("[main] 用户选择最小化到托盘");
+                }
+            });
+            app.listen("exit-choice-quit", move |_| {
+                write_log("[main] 用户选择直接退出");
+                std::process::exit(0);
+            });
 
             // 启动内嵌 axum 服务
             let state_for_serve = state.clone();
@@ -129,12 +160,15 @@ fn run_app() {
             Ok(())
         })
         .on_window_event(|window, event| {
-            //隐藏到托盘
+            // 点击关闭按钮: 阻止默认关闭, 让前端弹出"请选择退出方式"对话框
             if let WindowEvent::CloseRequested { api, .. } = event {
                 if window.label() == "main" {
                     api.prevent_close();
-                    let _ = window.hide();
-                    write_log("[main] 关闭按钮 → 已隐藏到托盘");
+                    // 通知前端展示退出方式选择弹窗
+                    if let Err(e) = window.emit("request-exit-choice", ()) {
+                        write_log(&format!("[main] 发送 request-exit-choice 失败: {e}"));
+                    }
+                    write_log("[main] 关闭按钮 → 请求选择退出方式");
                 }
             }
         })

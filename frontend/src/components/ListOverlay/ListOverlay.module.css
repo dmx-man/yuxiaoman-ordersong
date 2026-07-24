@@ -227,6 +227,7 @@
 }
 .badge.wy { background: var(--platform-wy, #ff2d55); }
 .badge.qq { background: var(--platform-qq, #14a44d); }
+.badge.bili { background: var(--platform-bili, #fb7299); }
 
 /* 滚动条细化 */
 .list::-webkit-scrollbar { width: 8px; }

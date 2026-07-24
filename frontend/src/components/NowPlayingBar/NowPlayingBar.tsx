@@ -1,6 +1,7 @@
 import { Show, createSignal } from "solid-js";
 import { audioPlayer } from "@/infra/audio/AudioPlayer";
-import { playNext } from "@/services/PlayerService";
+import { settings } from "@/stores/settings";
+import { playNext, togglePlayback } from "@/services/PlayerService";
 import { queue } from "@/stores/queue";
 import styles from "./NowPlayingBar.module.css";
 
@@ -39,10 +40,11 @@ export function NowPlayingBar() {
         window.addEventListener("pointerup", up);
     };
 
-    const [vol, setVol] = createSignal(audioPlayer.volume() * 100);
+    const [vol, setVol] = createSignal(Math.round(settings.volume() * 100));
     const onVol = (v: number) => {
         setVol(v);
         audioPlayer.setVolume(v / 100);
+        settings.setVolume(v / 100);
     };
 
     const fallbackLogo = `${import.meta.env.BASE_URL}logo.png`;
@@ -75,8 +77,8 @@ export function NowPlayingBar() {
                                 <span class={styles.artist}> — {it().song.sartist}</span>
                             </div>
                             <div class={styles.meta}>
-                                <span class={`${styles.badge} ${it().song.platform === "wy" ? styles.wy : styles.qq}`}>
-                                    {it().song.platform === "wy" ? "网易云" : "QQ"}
+                                <span class={`${styles.badge} ${it().song.platform === "qq" ? styles.qq : it().song.platform === "bili" ? styles.bili : styles.wy}`}>
+                                    {it().song.platform === "qq" ? "QQ" : it().song.platform === "bili" ? "B站" : "网易云"}
                                 </span>
                                 <span class={styles.user}>点歌人 · {it().uname}</span>
                             </div>
@@ -111,7 +113,7 @@ export function NowPlayingBar() {
                 </div>
                 <button
                     class={styles.playBtn}
-                    onClick={() => audioPlayer.playing() ? audioPlayer.pause() : audioPlayer.play()}
+                    onClick={() => togglePlayback()}
                     title={audioPlayer.playing() ? "暂停" : "播放"}
                 >
                     <Show

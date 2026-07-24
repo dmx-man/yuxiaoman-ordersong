@@ -14,6 +14,11 @@ export const ENV = {
     ANCHOR_CODE: (params.get("code") || params.get("CODE") || "").trim(),
     APP_ID: parseInt(params.get("app_id") || "0", 10) || 0,
     VIEW: (params.get("view") || "full").toLowerCase() as "full" | "lyrics" | "stream" | "list" | "audio" | "compact",
+    // OBS 直播叠加层显隐开关 (URL 控制); 仅 =0 时隐藏, 缺省/其他值(如 1)均显示
+    SHOW_CARD: params.get("showCard") !== "0",
+    SHOW_LYRICS: params.get("showLyrics") !== "0",
+    SHOW_NEXT: params.get("showNext") !== "0",
+    SHOW_NOTICE: params.get("showNotice") !== "0",
     DEBUG: params.get("debug") === "1"
 };
 

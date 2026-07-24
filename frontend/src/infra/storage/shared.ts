@@ -41,6 +41,14 @@ export const SHARED_KEYS: readonly string[] = [
     "v3.enableSCBoost",
     "v3.showLyrics",
     "v3.theme",
+    "v3.accentColor",
+    // OBS 浏览器源 - 直播叠加层显示开关
+    "v3.obs.showSongCard",
+    "v3.obs.showScrollLyrics",
+    "v3.obs.showNextPreview",
+    "v3.obs.showNotice",
+    // 关闭方式 (缓存配置共享)
+    "v3.closeMethod",
     // 名单 / 历史
     "v3.userBlackList",
     "v3.songBlackList",

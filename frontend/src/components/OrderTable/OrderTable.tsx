@@ -37,7 +37,7 @@ export function OrderTable() {
             </div>
             <div class={styles.searchRow}>
                 <input
-                    placeholder="手动加歌（关键词，回车提交）"
+                    placeholder="手动加歌（关键词 / BV 号，回车提交）"
                     value={keyword()}
                     disabled={adding()}
                     onInput={(e) => setKeyword(e.currentTarget.value)}

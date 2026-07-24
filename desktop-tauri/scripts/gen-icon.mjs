@@ -22,7 +22,8 @@ const __dirname = path.dirname(__filename);
 const ROOT = path.resolve(__dirname, "..", "..");
 
 const LOGO_PNG = path.join(ROOT, "logo.png");
-const ICO_PATH = path.join(__dirname, "..", "src-tauri", "icons", "icon.ico");
+// 必须输出到 app crate 的 icons 目录, 与 tauri.conf.json 的 "icons/icon.ico" 对应
+const ICO_PATH = path.join(__dirname, "..", "src-tauri", "crates", "app", "icons", "icon.ico");
 
 if (!fs.existsSync(LOGO_PNG)) {
     console.error(`[icon] 找不到 ${LOGO_PNG}`);

@@ -24,6 +24,8 @@
 .success { border-left-color: var(--success); }
 .warn { border-left-color: var(--warn); }
 .error { border-left-color: var(--error); }
+.clickable { pointer-events: auto; cursor: pointer; transition: filter 0.15s; }
+.clickable:hover { filter: brightness(1.12); }
 
 @keyframes slideIn {
     from { transform: translateX(40px); opacity: 0; }

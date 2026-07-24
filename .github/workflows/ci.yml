@@ -1,49 +1,48 @@
 name: CI
 
+# 推送到 main|master（或手动触发）时：参考 dev 流程直接构建 Windows exe，
+# 不再跑单独的检查步骤，构建产物既作为 Actions 运行产物上传，也发布到正式 Release。
 on:
   push:
     branches: [main, master]
-  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  frontend:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 9
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: "pnpm"
-
-      - name: Install
-        run: pnpm install --no-frozen-lockfile
-
-      - name: Typecheck
-        run: pnpm --filter ordersong-frontend typecheck
-
-      - name: Build frontend
-        run: pnpm --filter ordersong-frontend build
-
-      - name: Upload frontend artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-dist
-          path: frontend/dist
-
-  rust:
+  release:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 需要完整历史与 tags 以生成提交对比
+
+      - name: Read version
+        id: version
+        shell: bash
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          cache: true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt, clippy
 
       - name: Cache cargo
         uses: actions/cache@v4
@@ -56,11 +55,66 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-
 
-      - name: Format check
-        run: cargo fmt --check --manifest-path desktop-tauri/src-tauri/Cargo.toml
+      - name: Install JS deps
+        run: pnpm install --no-frozen-lockfile
 
-      - name: Clippy
-        run: cargo clippy --workspace --manifest-path desktop-tauri/src-tauri/Cargo.toml
+      # tauri-build 需要 icons/icon.ico (被 .gitignore 忽略, 这里从 logo.png 重新生成)
+      - name: Generate icon
+        run: node desktop-tauri/scripts/gen-icon.mjs
 
-      - name: Build workspace
-        run: cargo build --workspace --manifest-path desktop-tauri/src-tauri/Cargo.toml
+      # installer 脚本会依次执行 sync-version / clean-acl-cache / bundle-backend / tauri build，
+      # 其中 tauri build 的 beforeBuildCommand 会自动构建前端。
+      - name: Build x64 installer
+        run: pnpm --filter ordersong-desktop installer
+
+      # CI(非中文代码页)下中文 productName 会被 NSIS 丢弃, 直接把安装包改名为英文名, 不再做检测
+      - name: Rename installer to English name
+        shell: bash
+        run: |
+          node -e "const fs=require('fs'),path=require('path');const dir='desktop-tauri/src-tauri/target/release/bundle/nsis';const f=fs.readdirSync(dir).find(x=>x.toLowerCase().endsWith('.exe'));if(f){const nf='yuxiaoman-ordersong_${{ steps.version.outputs.version }}_x64-setup.exe';fs.renameSync(path.join(dir,f),path.join(dir,nf));console.log('已重命名为 '+nf);}else{console.log('未找到 exe');}"
+
+      # 同时把 exe 作为 Actions 运行产物上传，方便在 Actions 运行页直接下载（Release 里也会附同一份）
+      - name: Upload exe artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: yuxiaoman-ordersong_${{ steps.version.outputs.version }}_x64-setup
+          path: desktop-tauri/src-tauri/target/release/bundle/nsis/*.exe
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          TAG="${{ steps.version.outputs.tag }}"
+          EXE=$(ls desktop-tauri/src-tauri/target/release/bundle/nsis/*.exe | head -n1)
+          REPO="${{ github.repository }}"
+
+          # 取 master 上一个正式版本 tag(v*, 排除 dev-latest 等预发布 tag), 用于与本次做提交对比
+          PREV=$(git describe --tags --abbrev=0 --match "v*" 2>/dev/null || true)
+          if [ -n "$PREV" ]; then
+            RANGE="$PREV..HEAD"
+          else
+            RANGE="HEAD"
+          fi
+
+          {
+            echo "## RELEASE v$VERSION"
+            echo
+            if [ -n "$PREV" ]; then
+              echo "> 对比上一版本 \`$PREV\`"
+              echo
+              echo "完整对比: https://github.com/$REPO/compare/$PREV...$TAG"
+              echo
+            fi
+            echo "### 提交记录"
+            echo
+            git log "$RANGE" --no-merges --pretty=format:"- [\`%h\`](https://github.com/$REPO/commit/%H) %s — _%an_"
+            echo
+          } > release-notes.md
+
+          gh release create "$TAG" "$EXE" \
+            --title "v$VERSION" \
+            --notes-file release-notes.md

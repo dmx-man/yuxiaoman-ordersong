@@ -1,6 +1,7 @@
 import { createSignal } from "solid-js";
 import { liveStateApi } from "@/api/liveState";
 import type { LiveStateSnapshot, LiveNowPlaying } from "@/types/live";
+import { applyAccentColor } from "@/utils/accent";
 
 /**
  * 跨进程播放状态同步 store
@@ -21,6 +22,8 @@ const EMPTY: LiveStateSnapshot = {
     playing: false,
     queue: [],
     notice: null,
+    fadeEnabled: false,
+    fadeDuration: 1000,
     t: 0,
 };
 
@@ -44,6 +47,12 @@ export function startLiveStatePoll(intervalMs = 500): void {
         const data = await liveStateApi.pull();
         if (data && typeof data === "object") {
             setLiveState({ ...EMPTY, ...data });
+            // 同步主程序推送的主题强调色 / 主题到 OBS 浏览器源 (独立进程, 无本地设置)
+            // 仅当主程序确实推送了字段时才覆盖, 否则保留叠加层自身从共享配置拉取的值, 避免回落默认色
+            if (data.accentColor) applyAccentColor(data.accentColor);
+            if (data.theme) {
+                document.body.classList.toggle("theme-light", data.theme === "light");
+            }
         }
     };
     void tick();

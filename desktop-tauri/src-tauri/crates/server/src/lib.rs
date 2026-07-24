@@ -8,6 +8,7 @@
 //! - `<base>/bili-room/*` - B 站房间号网页协议
 //! - `<base>/netease_api/*` - 网易云 weapi 代理
 //! - `<base>/qq-api/*` - QQ 音乐代理
+//! - `<base>/bili-music/*` - B 站 BV 号点歌音频代理
 //! - `<base>/app-config` - 跨客户端共享配置
 //! - `<base>/live-state` - OBS 浏览器源播放快照同步
 //! - `<base>/*` - 前端静态资源
@@ -47,6 +48,7 @@ pub fn build_router(state: AppStateRef) -> Router {
         .nest("/bili-room", routes::bili_web::router())
         .nest("/netease_api", routes::netease::router())
         .nest("/qq-api", routes::qq::router())
+        .nest("/bili-music", routes::bili_music::router())
         .route(
             "/live-state",
             axum::routing::get(live_state::get_state).post(live_state::set_state),

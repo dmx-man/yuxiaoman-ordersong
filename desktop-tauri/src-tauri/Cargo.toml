@@ -11,7 +11,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.1.0-beta.2"
+version = "0.1.0-beta.4"
 edition = "2021"
 rust-version = "1.75"
 authors = ["dmx-man"]
@@ -25,7 +25,7 @@ axum = { version = "0.7", features = ["macros", "json"] }
 tower = "0.5"
 tower-http = { version = "0.6", features = ["cors", "fs", "trace", "limit"] }
 hyper = { version = "1", features = ["server"] }
-reqwest = { version = "0.12", default-features = false, features = ["json", "cookies", "rustls-tls", "gzip", "brotli", "deflate", "zstd"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "cookies", "rustls-tls", "gzip", "brotli", "deflate", "zstd", "stream"] }
 http = "1"
 mime_guess = "2"
 
@@ -63,6 +63,8 @@ ureq = "2"
 # Tauri
 tauri = { version = "2", features = ["tray-icon"] }
 tauri-build = { version = "2", features = [] }
+tauri-plugin-global-shortcut = "2"
+tauri-plugin-dialog = "2"
 
 [profile.release]
 panic = "abort"

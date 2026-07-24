@@ -27,6 +27,20 @@ function copyDir(src, dst) {
     fs.cpSync(src, dst, { recursive: true, dereference: true });
 }
 
+// Tauri 的 frontendDist 指向占位目录 `dist-stub` (真正 UI 由 axum 在 17777 提供)。
+// 该目录被 .gitignore 忽略, 这里每次构建前自动补一个最小 index.html, 避免 "Unable to find your web assets"。
+const DIST_STUB = path.join(DESKTOP_DIR, "dist-stub");
+ensureDir(DIST_STUB);
+const STUB_HTML = path.join(DIST_STUB, "index.html");
+if (!fs.existsSync(STUB_HTML)) {
+    fs.writeFileSync(
+        STUB_HTML,
+        '<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>鱼小曼点歌助手</title></head>' +
+        "<body><!-- 占位页：生产 UI 由内嵌 axum (127.0.0.1:17777) 的 resources/frontend/dist 提供 --></body></html>\n"
+    );
+    console.log("[bundle] 生成占位 frontendDist:", STUB_HTML);
+}
+
 console.log("[bundle] 清理旧产物");
 rimraf(RESOURCES_DIR);
 ensureDir(RESOURCES_DIR);

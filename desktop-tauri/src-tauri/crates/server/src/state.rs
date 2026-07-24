@@ -13,7 +13,7 @@ use std::time::Duration;
 use ordersong_bili_open::BiliOpenClient;
 use ordersong_core::consts::{DEFAULT_UA, HTTP_TIMEOUT_SECS};
 use ordersong_core::AppConfig;
-use ordersong_music::{NeteaseClient, QqClient};
+use ordersong_music::{BiliMusicClient, NeteaseClient, QqClient};
 
 use crate::cache::Caches;
 use crate::metrics::Metrics;
@@ -41,6 +41,8 @@ pub struct AppState {
     pub netease: NeteaseClient,
     /// QQ 音乐客户端
     pub qq: QqClient,
+    /// B 站 BV 号点歌音频客户端
+    pub bili_music: BiliMusicClient,
 }
 
 pub type AppStateRef = Arc<AppState>;
@@ -62,6 +64,7 @@ impl AppState {
         );
         let netease = NeteaseClient::new(http.clone());
         let qq = QqClient::new(http.clone());
+        let bili_music = BiliMusicClient::new(http.clone());
 
         Arc::new(Self {
             cache: Caches::new(&cfg),
@@ -75,6 +78,7 @@ impl AppState {
             bili_open,
             netease,
             qq,
+            bili_music,
         })
     }
 

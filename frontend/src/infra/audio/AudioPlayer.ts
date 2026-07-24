@@ -49,7 +49,7 @@ export class AudioPlayer {
             this.ctx = new Ctor();
             this.source = this.ctx.createMediaElementSource(this.audio);
             this.gainNode = this.ctx.createGain();
-            this.gainNode.gain.value = 1;
+            this.gainNode.gain.value = this._volume[0]();
             this.source.connect(this.gainNode);
             this.gainNode.connect(this.ctx.destination);
         } catch (err) {
@@ -74,6 +74,14 @@ export class AudioPlayer {
     }
 
     play(): void {
+        // 播放前恢复增益到目标音量, 避免曾经淡出到 0 后(尤其关闭淡入淡出时)变无声
+        if (this.gainNode && this.ctx) {
+            const now = this.ctx.currentTime;
+            this.gainNode.gain.cancelScheduledValues(now);
+            this.gainNode.gain.setValueAtTime(this._volume[0](), now);
+        } else {
+            this.audio.volume = this._volume[0]();
+        }
         void this.audio.play();
     }
 
@@ -114,6 +122,49 @@ export class AudioPlayer {
                 if (t < 1) requestAnimationFrame(step);
             };
             requestAnimationFrame(step);
+        }
+    }
+
+    /** 带淡出的暂停: 先把增益线性降到 0, 到时再 pause */
+    fadePause(durationMs: number): void {
+        if (this.audio.paused) return;
+        if (this.gainNode && this.ctx) {
+            const now = this.ctx.currentTime;
+            const g = this.gainNode.gain;
+            g.cancelScheduledValues(now);
+            g.setValueAtTime(g.value, now);
+            g.linearRampToValueAtTime(0, now + durationMs / 1000);
+            window.setTimeout(() => {
+                if (!this.audio.paused) this.audio.pause();
+            }, durationMs);
+        } else {
+            const start = performance.now();
+            const target = this._volume[0]();
+            const step = (n: number) => {
+                const t = Math.min(1, (n - start) / durationMs);
+                this.audio.volume = target * (1 - t);
+                if (t < 1) requestAnimationFrame(step);
+                else if (!this.audio.paused) this.audio.pause();
+            };
+            requestAnimationFrame(step);
+        }
+    }
+
+    /**
+     * 切换播放 / 暂停。
+     * fadeMs > 0 时, 播放走淡入、暂停走淡出; 否则直切。
+     */
+    toggle(fadeMs = 0): void {
+        if (this.audio.paused) {
+            if (fadeMs > 0) {
+                void this.audio.play();
+                this.fadeIn(fadeMs);
+            } else {
+                this.play();
+            }
+        } else {
+            if (fadeMs > 0) this.fadePause(fadeMs);
+            else this.pause();
         }
     }
 }

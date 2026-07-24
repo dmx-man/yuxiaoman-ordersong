@@ -35,7 +35,16 @@ export function parseOrderCommand(text: string, triggerWords: readonly string[])
 
     for (const tw of triggerWords) {
         if (trimmed.startsWith(tw)) {
-            let keyword = trimmed.slice(tw.length).trim();
+            const keywordRaw = trimmed.slice(tw.length).trim();
+            // BV 号 (忽略大小写, 形如 BV1eN4y1w73u) 直接识别为 B 站视频
+            if (/^bv[0-9a-z]{10}$/i.test(keywordRaw)) {
+                return {
+                    matched: true,
+                    keyword: "BV" + keywordRaw.slice(2),
+                    platform: "bili",
+                };
+            }
+            let keyword = keywordRaw;
             let platform: Platform | undefined;
             const head = keyword.slice(0, 2).toLowerCase();
             if ((PLATFORM_PREFIXES as readonly string[]).includes(head)) {
