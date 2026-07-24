@@ -137,7 +137,7 @@ export function AboutSection() {
             <p style={{ "margin-top": "10px" }}><b>观众弹幕指令：</b></p>
             <ul style={{ margin: "4px 0", "padding-left": "20px", "line-height": "1.8", "font-size": "13px" }}>
                 <li><code>点歌 歌名</code> / <code>来一首 歌名</code> / <code>我要听 歌名</code></li>
-                <li><code>点歌 wy 歌名</code>（指定网易云）/ <code>点歌 qq 歌名</code>（指定 QQ）</li>
+                <li><code>点歌 wy 歌名</code>（指定网易云）/ <code>点歌 qq 歌名</code>（指定 QQ）/ <code>点歌 BV1CfTQ6uEqk</code>（指定 B站）</li>
                 <li><code>切歌</code>（仅本人 / 空闲歌单 / 主播可切）</li>
                 <li><code>暂停</code> / <code>播放</code>（仅主播）</li>
             </ul>
